@@ -22,3 +22,10 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Google Wallet service account credentials (keep private!)
+/public/cobalt-carver-*.json
+/storage/app/cobalt-carver-*.json
+*.json.key
+*-service-account.json
+
