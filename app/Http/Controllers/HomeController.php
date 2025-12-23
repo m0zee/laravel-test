@@ -80,6 +80,60 @@ class HomeController extends Controller
     }
 
     /**
+     * Generate pass and redirect to Google Wallet (One-Click Add to Wallet)
+     */
+    public function addToWallet(Request $request)
+    {
+        try {
+            // Ensure pass class exists
+            if (!$this->walletService->passClassExists()) {
+                $this->walletService->createPassClass();
+            }
+
+            // Get custom data from request or use defaults
+            $data = [
+                'card_title' => $request->input('card_title', 'My Wallet Pass'),
+                'header' => $request->input('header', 'Special Offer'),
+                'subheader' => $request->input('subheader', 'Valid for 30 days'),
+                'background_color' => $request->input('background_color', '#4285f4'),
+                'barcode_value' => $request->input('barcode_value', 'PASS-' . uniqid()),
+                'text_modules' => $request->input('text_modules', [
+                    [
+                        'header' => 'Customer Name',
+                        'body' => $request->input('customer_name', 'John Doe'),
+                        'id' => 'customer-name'
+                    ],
+                    [
+                        'header' => 'Pass ID',
+                        'body' => 'PASS-' . uniqid(),
+                        'id' => 'pass-id'
+                    ]
+                ])
+            ];
+
+            // Only add logo if it's a valid URL
+            if ($request->filled('logo') && filter_var($request->input('logo'), FILTER_VALIDATE_URL)) {
+                $data['logo'] = $request->input('logo');
+            }
+
+            // Only add hero image if it's a valid URL
+            if ($request->filled('hero_image') && filter_var($request->input('hero_image'), FILTER_VALIDATE_URL)) {
+                $data['hero_image'] = $request->input('hero_image');
+            }
+
+            $jwt = $this->walletService->generatePass($data);
+
+            // Redirect directly to Google Wallet
+            $saveUrl = "https://pay.google.com/gp/v/save/{$jwt}";
+
+            return redirect()->away($saveUrl);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to generate pass: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Create or update the pass class
      */
     public function createClass(): JsonResponse
